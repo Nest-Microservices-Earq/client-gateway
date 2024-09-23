@@ -1,10 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, Query, HttpStatus, ParseUUIDPipe } from '@nestjs/common';
-import { CreateOrderDto } from './dto/create-order.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Inject,
+  Query,
+  HttpStatus,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { ORDER_SERVICE } from 'src/config';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { firstValueFrom } from 'rxjs';
-import { OrderPaginationDto } from './dto';
+import { CreateOrderDto, OrderPaginationDto, StatusDto } from './dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -26,15 +36,29 @@ export class OrdersController {
   }
 
   @Get(':id')
-  async findOne(@Param('id',ParseUUIDPipe) id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     try {
       const order = await firstValueFrom(
         this.ordersClient.send({ cmd: 'find_one_order' }, { id }),
       );
-      return order
+      return order;
     } catch (error) {
-        throw new RpcException(error);
+      throw new RpcException(error);
     }
   }
 
+  @Patch(':id')
+  changeStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() statusDto: StatusDto,
+  ) {
+    try {
+      return this.ordersClient.send(
+        { cmd: 'change_order_status' },
+        { id, status: statusDto.status },
+      );
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
 }
