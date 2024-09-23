@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Delete,
   Get,
@@ -12,9 +13,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom } from 'rxjs';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { PRODUCT_SERVICE } from 'src/config';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -23,8 +26,8 @@ export class ProductsController {
   ) {}
 
   @Post()
-  createProduct() {
-    return 'This action adds a new product';
+  createProduct(@Body() createProductDto: CreateProductDto) {
+    return this.productsClient.send({ cmd: 'create_product' }, createProductDto);
   }
 
   @Get()
@@ -51,12 +54,18 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  update() {
-    return 'This action updates a #${id} product';
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateProductDto: UpdateProductDto) {
+    return this.productsClient.send(
+      { cmd: 'update_product' },
+      { id, ...updateProductDto }
+    ).pipe(
+      catchError(error => {
+        throw new RpcException(error);
+      }))
   }
 
   @Delete(':id')
-  remove() {
-    return 'This action removes a #${id} product';
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.productsClient.send({ cmd: 'remove_product' }, { id });
   }
 }
