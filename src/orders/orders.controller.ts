@@ -18,26 +18,30 @@ import { CreateOrderDto, OrderPaginationDto, StatusDto } from './dto';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(
-    @Inject(NATS_SERVICE) private readonly client: ClientProxy,
-  ) {}
+  constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
 
   @Post()
   async createOrder(@Body() createOrderDto: CreateOrderDto) {
-    try{
-      const order = await firstValueFrom(this.client.send({ cmd: 'create_order' }, createOrderDto));
+    try {
+      const order = await firstValueFrom(
+        this.client.send({ cmd: 'create_order' }, createOrderDto),
+      );
       return order;
-    }catch(error){
+    } catch (error) {
       throw new RpcException(error);
     }
   }
 
   @Get()
-  findAll(@Query() orderPaginationDto: OrderPaginationDto) {
-    return this.client.send(
-      { cmd: 'find_all_orders' },
-      orderPaginationDto,
-    );
+  async findAll(@Query() orderPaginationDto: OrderPaginationDto) {
+    try {
+      const orders = await firstValueFrom(
+        this.client.send({ cmd: 'find_all_orders' }, orderPaginationDto),
+      );
+      return orders;
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 
   @Get(':id')
